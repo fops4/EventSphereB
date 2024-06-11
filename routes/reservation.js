@@ -4,9 +4,9 @@ const connection = require('../database');
 
 // Route pour réserver un événement
 router.post('/reservations', async (req, res, next) => {
-    const { reserveur, evenement_id } = req.body;
+    const { reserveur, evenement_id, reservation_date, } = req.body;
   
-    if (!reserveur || !evenement_id) {
+    if (!reserveur || !evenement_id || !reservation_date) {
       return res.status(400).json({ message: 'Reserveur et evenement_id sont requis' });
     }
   
@@ -25,8 +25,8 @@ router.post('/reservations', async (req, res, next) => {
         }
   
         // Insérer la nouvelle réservation
-        const insertSql = `INSERT INTO reservations (reserveur, evenement_id) VALUES (?, ?)`;
-        connection.query(insertSql, [reserveur, evenement_id], (err, results) => {
+        const insertSql = `INSERT INTO reservations (reserveur, evenement_id, reservation_date) VALUES (?, ?, ?)`;
+        connection.query(insertSql, [reserveur, evenement_id, reservation_date], (err, results) => {
           if (err) {
             console.error('Erreur lors de la réservation de l\'événement :', err);
             return next(err);
@@ -70,9 +70,10 @@ router.get('/mes-reservations/:reserveur', async (req, res, next) => {
 // Route pour annuler une réservation
 router.delete('/reservations/:id', async (req, res, next) => {
   const { id } = req.params;
+  console.log(id);
 
   try {
-    const sql = `DELETE FROM reservations WHERE id = ?`;
+    const sql = `DELETE FROM reservations WHERE evenement_id = ?`;
     connection.query(sql, [id], (err, results) => {
       if (err) {
         console.error('Erreur lors de l\'annulation de la réservation :', err);

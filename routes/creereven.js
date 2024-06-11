@@ -202,6 +202,65 @@ router.delete('/evenements/:id', (req, res, next) => {
   }
 });
 
+// Route pour obtenir les statistiques d'un événement
+router.get('/evenement/:id/statistiques', async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const sql = `
+      SELECT COUNT(r.id) AS total_subscribers, 
+             DATE_FORMAT(r.reservation_date, '%Y-%m-%d') AS date, 
+             COUNT(r.id) AS daily_subscriptions
+      FROM reservations r
+      WHERE r.evenement_id = ?
+      GROUP BY DATE_FORMAT(r.reservation_date, '%Y-%m-%d')
+      ORDER BY date ASC`;
+
+    connection.query(sql, [id], (err, results) => {
+      if (err) {
+        console.error('Erreur lors de la récupération des statistiques :', err);
+        return next(err);
+      }
+
+      const totalSubscribers = results.reduce((total, row) => total + row.daily_subscriptions, 0);
+      const dailySubscriptions = results.map(row => ({
+        date: row.date,
+        subscriptions: row.daily_subscriptions,
+      }));
+
+      res.status(200).json({ totalSubscribers, dailySubscriptions });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+// Route pour obtenir les réservations d'un événement spécifique
+router.get('/evenement/:id/reservations', async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const sql = `
+      SELECT u.username, u.email, r.reservation_date 
+      FROM reservations r 
+      JOIN utilisateurs u ON r.reserveur = u.id 
+      WHERE r.evenement_id = ?`;
+    
+    connection.query(sql, [id], (err, results) => {
+      if (err) {
+        console.error('Erreur lors de la récupération des réservations :', err);
+        return next(err);
+      }
+
+      res.status(200).json({ reservations: results });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 // Middleware de gestion des erreurs
 router.use((err, req, res, next) => {
   console.error(err.stack);
